@@ -27,7 +27,7 @@ export const useChatStore = defineStore('chat', () => {
 
   // Computed
   const currentConversation = computed(() => {
-    return conversations.value.find(c => c.id === currentConversationId.value)
+    return conversations.value.find((c) => c.id === currentConversationId.value)
   })
 
   const currentMessages = computed(() => {
@@ -57,7 +57,7 @@ export const useChatStore = defineStore('chat', () => {
       const response = await fetch(`${API_BASE}/conversations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title })
+        body: JSON.stringify({ title }),
       })
       if (!response.ok) throw new Error('Failed to create conversation')
       const newConversation = await response.json()
@@ -80,13 +80,13 @@ export const useChatStore = defineStore('chat', () => {
       const response = await fetch(`${API_BASE}/conversations/${id}`)
       if (!response.ok) throw new Error('Failed to fetch conversation')
       const conversation = await response.json()
-      
+
       // Update in list
-      const index = conversations.value.findIndex(c => c.id === id)
+      const index = conversations.value.findIndex((c) => c.id === id)
       if (index !== -1) {
         conversations.value[index] = conversation
       }
-      
+
       currentConversationId.value = id
       return conversation
     } catch (e) {
@@ -102,11 +102,11 @@ export const useChatStore = defineStore('chat', () => {
     error.value = null
     try {
       const response = await fetch(`${API_BASE}/conversations/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
       if (!response.ok) throw new Error('Failed to delete conversation')
-      
-      conversations.value = conversations.value.filter(c => c.id !== id)
+
+      conversations.value = conversations.value.filter((c) => c.id !== id)
       if (currentConversationId.value === id) {
         currentConversationId.value = conversations.value[0]?.id || null
       }
@@ -121,7 +121,9 @@ export const useChatStore = defineStore('chat', () => {
 
   async function sendMessage(conversationId: number, message: string) {
     error.value = null
-    const conversation = conversations.value.find(c => c.id === conversationId)
+    const conversation = conversations.value.find(
+      (c) => c.id === conversationId
+    )
     if (!conversation) throw new Error('Conversation not found')
 
     // Add user message optimistically
@@ -129,15 +131,18 @@ export const useChatStore = defineStore('chat', () => {
     conversation.messages.push({
       role: 'user',
       content: message,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     })
 
     try {
-      const response = await fetch(`${API_BASE}/conversations/${conversationId}/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
-      })
+      const response = await fetch(
+        `${API_BASE}/conversations/${conversationId}/send`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+        }
+      )
 
       if (!response.ok) throw new Error('Failed to send message')
       if (!response.body) throw new Error('No response body')
@@ -145,7 +150,7 @@ export const useChatStore = defineStore('chat', () => {
       const botMessage: ChatMessage = {
         role: 'bot',
         content: '',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       }
       conversation.messages.push(botMessage)
 
@@ -208,6 +213,6 @@ export const useChatStore = defineStore('chat', () => {
     selectConversation,
     deleteConversation,
     sendMessage,
-    clearError
+    clearError,
   }
 })

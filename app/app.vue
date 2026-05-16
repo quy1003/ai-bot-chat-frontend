@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-slate-100 px-4 py-8 text-slate-950 sm:px-6">
     <NuxtRouteAnnouncer />
-    <div class="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
+    <div class="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
       <ChatBox />
     </div>
   </div>

@@ -127,7 +127,8 @@ export const useChatStore = defineStore('chat', () => {
     )
     if (!conversation) throw new Error('Conversation not found')
 
-    const isFirstMessage = !conversation.messages || conversation.messages.length === 0
+    const isFirstMessage =
+      !conversation.messages || conversation.messages.length === 0
 
     // Add user message optimistically
     if (!conversation.messages) conversation.messages = []
@@ -163,10 +164,13 @@ export const useChatStore = defineStore('chat', () => {
             const charsToTake = textQueue.length > 100 ? 3 : 1
             const chunk = textQueue.slice(0, charsToTake)
             textQueue = textQueue.slice(charsToTake)
-            
+
             // Mutate the reactive proxy inside the array to trigger UI updates
-            if (conversation.messages && conversation.messages[botMessageIndex]) {
-              conversation.messages[botMessageIndex].content += chunk
+            if (conversation.messages) {
+              const msg = conversation.messages[botMessageIndex]
+              if (msg) {
+                msg.content += chunk
+              }
             }
             await new Promise((r) => setTimeout(r, 20)) // 20ms delay for a nice reading speed
           } else {
@@ -189,7 +193,7 @@ export const useChatStore = defineStore('chat', () => {
           break
         }
 
-        if (!botMessageAdded) {
+        if (!botMessageAdded && conversation.messages) {
           conversation.messages.push({
             role: 'bot',
             content: '',
@@ -217,7 +221,7 @@ export const useChatStore = defineStore('chat', () => {
           }
         }
       }
-      
+
       // Wait for rendering to finish
       await renderPromise
 

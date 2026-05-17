@@ -144,7 +144,15 @@
             </div>
           </template>
 
-          <div v-if="chatStore.loading && (!chatStore.currentMessages.length || chatStore.currentMessages[chatStore.currentMessages.length - 1].role === 'user')" class="flex items-end gap-3">
+          <div
+            v-if="
+              chatStore.loading &&
+              (!chatStore.currentMessages.length ||
+                chatStore.currentMessages[chatStore.currentMessages.length - 1]
+                  ?.role === 'user')
+            "
+            class="flex items-end gap-3"
+          >
             <div
               class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200"
             >

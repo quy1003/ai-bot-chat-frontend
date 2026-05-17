@@ -126,11 +126,11 @@
                 B
               </div>
               <div
-                class="max-w-[80%] rounded-lg px-4 py-3 text-sm leading-6 shadow-sm"
+                class="message-content rounded-lg px-4 py-3 text-sm leading-6 shadow-sm"
                 :class="
                   msg.role === 'user'
-                    ? 'rounded-br-sm bg-slate-900 text-white'
-                    : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
+                    ? 'rounded-br-sm bg-slate-900 text-white max-w-[70%]'
+                    : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800 max-w-prose'
                 "
               >
                 {{ msg.content }}
@@ -144,7 +144,7 @@
             </div>
           </template>
 
-          <div v-if="chatStore.loading" class="flex items-end gap-3">
+          <div v-if="chatStore.loading && (!chatStore.currentMessages.length || chatStore.currentMessages[chatStore.currentMessages.length - 1].role === 'user')" class="flex items-end gap-3">
             <div
               class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200"
             >
@@ -217,7 +217,7 @@ const scrollToBottom = async () => {
 
 const createNewConversation = async () => {
   try {
-    const title = `Chat ${new Date().toLocaleString()}`
+    const title = 'New Chat'
     await chatStore.createConversation(title)
     await scrollToBottom()
   } catch (error) {
@@ -280,3 +280,11 @@ const formatDate = (dateString: string) => {
   }
 }
 </script>
+
+<style scoped>
+.message-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+</style>

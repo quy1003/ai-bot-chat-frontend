@@ -121,10 +121,13 @@ export const useChatStore = defineStore('chat', () => {
 
   async function sendMessage(conversationId: number, message: string) {
     error.value = null
+    loading.value = true
     const conversation = conversations.value.find(
       (c) => c.id === conversationId
     )
     if (!conversation) throw new Error('Conversation not found')
+
+    const isFirstMessage = !conversation.messages || conversation.messages.length === 0
 
     // Add user message optimistically
     if (!conversation.messages) conversation.messages = []
@@ -147,21 +150,54 @@ export const useChatStore = defineStore('chat', () => {
       if (!response.ok) throw new Error('Failed to send message')
       if (!response.body) throw new Error('No response body')
 
-      const botMessage: ChatMessage = {
-        role: 'bot',
-        content: '',
-        created_at: new Date().toISOString(),
+      let textQueue = ''
+      let isStreamEnded = false
+      let botMessageIndex = -1
+      let botMessageAdded = false
+
+      // Separate worker to render characters smoothly
+      const renderTyping = async () => {
+        while (!isStreamEnded || textQueue.length > 0) {
+          if (textQueue.length > 0 && botMessageIndex !== -1) {
+            // How many chars to consume per tick depending on queue size to avoid falling too far behind
+            const charsToTake = textQueue.length > 100 ? 3 : 1
+            const chunk = textQueue.slice(0, charsToTake)
+            textQueue = textQueue.slice(charsToTake)
+            
+            // Mutate the reactive proxy inside the array to trigger UI updates
+            if (conversation.messages && conversation.messages[botMessageIndex]) {
+              conversation.messages[botMessageIndex].content += chunk
+            }
+            await new Promise((r) => setTimeout(r, 20)) // 20ms delay for a nice reading speed
+          } else {
+            await new Promise((r) => setTimeout(r, 20)) // wait for more data
+          }
+        }
       }
-      conversation.messages.push(botMessage)
+
+      // Start the typing renderer without blocking the read loop
+      const renderPromise = renderTyping()
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
-      let streamEnded = false
 
-      while (!streamEnded) {
+      while (true) {
         const { value, done } = await reader.read()
-        if (done) break
+        if (done) {
+          isStreamEnded = true
+          break
+        }
+
+        if (!botMessageAdded) {
+          conversation.messages.push({
+            role: 'bot',
+            content: '',
+            created_at: new Date().toISOString(),
+          })
+          botMessageIndex = conversation.messages.length - 1
+          botMessageAdded = true
+        }
 
         buffer += decoder.decode(value, { stream: true })
         const events = buffer.split(/\r?\n\r?\n/)
@@ -173,11 +209,30 @@ export const useChatStore = defineStore('chat', () => {
             if (line.startsWith('data:')) {
               const data = line.replace(/^data:\s?/, '')
               if (data === '[END]') {
-                streamEnded = true
+                isStreamEnded = true
               } else {
-                botMessage.content += data
+                textQueue += data
               }
             }
+          }
+        }
+      }
+      
+      // Wait for rendering to finish
+      await renderPromise
+
+      // If this was the first message, refetch the conversation to get the updated title
+      if (isFirstMessage) {
+        const updatedResponse = await fetch(
+          `${API_BASE}/conversations/${conversationId}`
+        )
+        if (updatedResponse.ok) {
+          const updatedConversation = await updatedResponse.json()
+          const index = conversations.value.findIndex(
+            (c) => c.id === conversationId
+          )
+          if (index !== -1) {
+            conversations.value[index] = updatedConversation
           }
         }
       }
@@ -189,6 +244,8 @@ export const useChatStore = defineStore('chat', () => {
       error.value = e instanceof Error ? e.message : 'Unknown error'
       console.error('Error sending message:', e)
       throw e
+    } finally {
+      loading.value = false
     }
   }
 

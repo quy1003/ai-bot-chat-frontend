@@ -130,10 +130,13 @@
                 :class="
                   msg.role === 'user'
                     ? 'rounded-br-sm bg-slate-900 text-white max-w-[70%]'
-                    : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800 max-w-prose'
+                    : 'prose prose-sm prose-slate rounded-bl-sm border border-slate-200 bg-white text-slate-800 max-w-[85%]'
                 "
               >
-                {{ msg.content }}
+                <template v-if="msg.role === 'user'">
+                  {{ msg.content }}
+                </template>
+                <div v-else v-html="renderMarkdown(msg.content)"></div>
               </div>
               <div
                 v-if="msg.role === 'user'"
@@ -211,10 +214,17 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
 import { useChatStore } from '../../stores/chat'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 const chatStore = useChatStore()
 const draft = ref('')
 const chatBody = ref<HTMLElement | null>(null)
+
+const renderMarkdown = (text: string) => {
+  if (!text) return ''
+  return DOMPurify.sanitize(marked.parse(text) as string)
+}
 
 const scrollToBottom = async () => {
   await nextTick()
